@@ -1,1 +1,1 @@
-global.token = "tokenmu";
+global.token = "";
