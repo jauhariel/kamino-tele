@@ -1,5 +1,10 @@
 import { fbdl } from "ruhend-scraper";
 import axios from "axios";
+import fs from "fs";
+import { pipeline } from "stream";
+import { promisify } from "util";
+
+const streamPipeline = promisify(pipeline);
 
 export default {
   name: "fb",
@@ -66,25 +71,18 @@ export default {
           ctx.chat.id,
           loadingMessage.message_id,
           null,
-          "� Mendownload video..."
+          "⏳ Mendownload video..."
         );
 
-        // Download video dengan headers yang sesuai
+        const writer = fs.createWriteStream(
+          `./media/tmp/facebook_${Date.now()}.mp4`
+        );
+
         const response = await axios({
           method: "GET",
           url: videoUrl,
-          responseType: "arraybuffer",
-          headers: {
-            "User-Agent": "TelegramBot (like TwitterBot)",
-            Accept: "*/*",
-            "Accept-Encoding": "gzip, deflate, br",
-            Connection: "keep-alive",
-          },
-          timeout: 60000, // 1 menit timeout
+          responseType: "stream",
         });
-
-        // Get video buffer
-        const videoBuffer = Buffer.from(response.data);
 
         // Update loading message
         await ctx.telegram.editMessageText(
@@ -94,9 +92,10 @@ export default {
           "📤 Mengirim video..."
         );
 
-        // Kirim video sebagai document dengan buffer
+        await streamPipeline(response.data, writer);
+
         await ctx.replyWithVideo(
-          { source: videoBuffer, filename: `facebook_video_${Date.now()}.mp4` },
+          { source: writer.path },
           {
             caption: `📹 *Video Facebook*\n\n🔗 *Link:* ${url}\n📊 *Resolusi:* ${
               hasil.data.find((v) => v.url === videoUrl)?.resolution ||
@@ -106,6 +105,8 @@ export default {
             reply_to_message_id: ctx.message.message_id,
           }
         );
+
+        fs.unlinkSync(writer.path);
 
         // Hapus loading message setelah berhasil
         await ctx.telegram.deleteMessage(
