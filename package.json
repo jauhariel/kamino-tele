@@ -12,7 +12,9 @@
   "author": "jauhariel.web.id",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.11.0",
     "dotenv": "^17.2.1",
+    "ruhend-scraper": "^9.0.8",
     "telegraf": "^4.16.3"
   },
   "devDependencies": {

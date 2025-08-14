@@ -1,7 +1,10 @@
+import { fbdl } from "ruhend-scraper";
+import axios from "axios";
+
 export default {
   name: "fb",
-  description: "Download Facebook video",
-  usage: "/fb <facebook_url>",
+  description: "Mendownload video Facebook",
+  usage: "/fb link",
   category: "downloader",
 
   async execute(ctx, args) {
@@ -9,50 +12,120 @@ export default {
       // Cek apakah ada URL yang diberikan
       if (!args || args.length === 0) {
         return ctx.reply(
-          "❌ Harap berikan URL Facebook!\n\nContoh: /fb https://facebook.com/..."
+          "❌ Harap berikan link Facebook!\n\n/fb linknya\nContoh: /fb https://facebook.com/...",
+          { reply_to_message_id: ctx.message.message_id }
         );
       }
 
       const url = args[0];
 
       // Validasi URL Facebook sederhana
-      if (!url.includes("facebook.com") && !url.includes("fb.com")) {
-        return ctx.reply("❌ URL harus dari Facebook!");
-      }
+      const urlRegex =
+        /^(https?:\/\/)?(www\.|web\.)?(facebook\.com|fb\.watch)\/.+$/;
+      if (!urlRegex.test(url))
+        return ctx.reply(
+          "❌ Link harus dari Facebook!\n\n/fb linknya\nContoh: /fb https://facebook.com/...",
+          {
+            reply_to_message_id: ctx.message.message_id,
+          }
+        );
 
       // Reply loading message
       const loadingMessage = await ctx.reply(
-        "⏳ Sedang memproses video Facebook..."
+        "⏳ Sedang memproses video Facebook...",
+        { reply_to_message_id: ctx.message.message_id }
       );
 
-      // Simulasi download (ganti dengan implementasi download sebenarnya)
-      setTimeout(async () => {
-        try {
-          // Di sini Anda bisa menambahkan logic download sebenarnya
-          // Misalnya menggunakan library seperti facebook-video-downloader
+      try {
+        let hasil = await fbdl(url);
 
-          await ctx.telegram.editMessageText(
-            ctx.chat.id,
-            loadingMessage.message_id,
-            null,
-            "✅ Video Facebook berhasil diproses!\n\n🎥 Judul: Sample Facebook Video\n📁 Size: 15.2 MB\n⏱️ Duration: 2:30"
-          );
-
-          // Kirim file (ganti dengan file sebenarnya)
-          await ctx.reply("📤 Mengirim file...");
-        } catch (error) {
-          await ctx.telegram.editMessageText(
-            ctx.chat.id,
-            loadingMessage.message_id,
-            null,
-            "❌ Terjadi kesalahan saat memproses video!"
-          );
-          console.error("Facebook download error:", error);
+        if (!hasil.data || hasil.data.length === 0) {
+          throw new Error("Tidak dapat menemukan video yang diinginkan.");
         }
-      }, 2000);
+
+        let videoUrl = null;
+
+        for (let video of hasil.data) {
+          if (video.resolution === "720p (HD)") {
+            videoUrl = video.url;
+            break;
+          } else if (video.resolution === "360p (SD)") {
+            videoUrl = video.url;
+          }
+        }
+
+        // Validasi apakah videoUrl berhasil didapat
+        if (!videoUrl) {
+          throw new Error(
+            "Tidak dapat menemukan video dengan kualitas yang sesuai."
+          );
+        }
+
+        // Update loading message
+        await ctx.telegram.editMessageText(
+          ctx.chat.id,
+          loadingMessage.message_id,
+          null,
+          "� Mendownload video..."
+        );
+
+        // Download video dengan headers yang sesuai
+        const response = await axios({
+          method: "GET",
+          url: videoUrl,
+          responseType: "arraybuffer",
+          headers: {
+            "User-Agent": "TelegramBot (like TwitterBot)",
+            Accept: "*/*",
+            "Accept-Encoding": "gzip, deflate, br",
+            Connection: "keep-alive",
+          },
+          timeout: 60000, // 1 menit timeout
+        });
+
+        // Get video buffer
+        const videoBuffer = Buffer.from(response.data);
+
+        // Update loading message
+        await ctx.telegram.editMessageText(
+          ctx.chat.id,
+          loadingMessage.message_id,
+          null,
+          "📤 Mengirim video..."
+        );
+
+        // Kirim video sebagai document dengan buffer
+        await ctx.replyWithVideo(
+          { source: videoBuffer, filename: `facebook_video_${Date.now()}.mp4` },
+          {
+            caption: `📹 *Video Facebook*\n\n🔗 *Link:* ${url}\n📊 *Resolusi:* ${
+              hasil.data.find((v) => v.url === videoUrl)?.resolution ||
+              "Unknown"
+            }\n\n_Diunduh oleh Kamino Bot_`,
+            parse_mode: "Markdown",
+            reply_to_message_id: ctx.message.message_id,
+          }
+        );
+
+        // Hapus loading message setelah berhasil
+        await ctx.telegram.deleteMessage(
+          ctx.chat.id,
+          loadingMessage.message_id
+        );
+      } catch (error) {
+        await ctx.telegram.editMessageText(
+          ctx.chat.id,
+          loadingMessage.message_id,
+          null,
+          "❌ Terjadi kesalahan saat memproses video!"
+        );
+        console.error("Facebook download error:", error);
+      }
     } catch (error) {
       console.error("Facebook command error:", error);
-      ctx.reply("❌ Terjadi kesalahan internal!");
+      ctx.reply("❌ Terjadi kesalahan internal!", {
+        reply_to_message_id: ctx.message.message_id,
+      });
     }
   },
 };

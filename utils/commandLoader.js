@@ -44,7 +44,7 @@ export class CommandLoader {
             // Validasi struktur command
             if (command.name && command.execute) {
               this.commands.set(command.name, command);
-              console.log(`📁 Loaded command: /${command.name}`);
+              //console.log(`📁 Loaded command: /${command.name}`);
             } else {
               console.warn(`⚠️ Invalid command structure in ${itemPath}`);
             }

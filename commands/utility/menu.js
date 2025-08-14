@@ -4,7 +4,7 @@ export default {
   usage: "/menu [command_name]",
   category: "utility",
 
-  async execute(ctx, args, commandLoader) {
+  async execute(ctx, args, commandLoader, prefix = "/") {
     try {
       if (args && args.length > 0) {
         // Show help for specific command
@@ -12,18 +12,23 @@ export default {
         const command = commandLoader.getCommand(commandName);
 
         if (!command) {
-          return ctx.reply(`❌ Command '${commandName}' tidak ditemukan!`);
+          return ctx.reply(`❌ Command '${commandName}' tidak ditemukan!`, {
+            reply_to_message_id: ctx.message.message_id,
+          });
         }
 
         const helpText = `
 📖 **${command.name.toUpperCase()}**
 
 📝 Deskripsi: ${command.description}
-📋 Penggunaan: ${command.usage}
+📋 Penggunaan: ${command.usage.replace(/^\//, prefix)}
 📁 Kategori: ${command.category}
                 `.trim();
 
-        return ctx.reply(helpText, { parse_mode: "Markdown" });
+        return ctx.reply(helpText, {
+          parse_mode: "Markdown",
+          reply_to_message_id: ctx.message.message_id,
+        });
       }
 
       // Show all commands grouped by category
@@ -42,17 +47,23 @@ export default {
       for (const [category, cmds] of Object.entries(categories)) {
         helpText += `📁 **${category.toUpperCase()}**\n`;
         cmds.forEach((cmd) => {
-          helpText += `• /${cmd.name} - ${cmd.description}\n`;
+          helpText += `• ${prefix}${cmd.name}
+${cmd.description}\n`;
         });
         helpText += "\n";
       }
 
-      helpText += "💡 Gunakan `/help [command]` untuk detail command tertentu";
+      helpText += `💡 Gunakan \`${prefix}menu [command]\` untuk detail command tertentu`;
 
-      ctx.reply(helpText, { parse_mode: "Markdown" });
+      ctx.reply(helpText, {
+        parse_mode: "Markdown",
+        reply_to_message_id: ctx.message.message_id,
+      });
     } catch (error) {
       console.error("Help command error:", error);
-      ctx.reply("❌ Terjadi kesalahan saat menampilkan help!");
+      ctx.reply("❌ Terjadi kesalahan saat menampilkan help!", {
+        reply_to_message_id: ctx.message.message_id,
+      });
     }
   },
 };
