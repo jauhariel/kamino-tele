@@ -7,7 +7,7 @@ export default {
   usage: "/fb link",
   category: "downloader",
 
-  async execute(ctx, args) {
+  async execute({ ctx, args }) {
     try {
       // Cek apakah ada URL yang diberikan
       if (!args || args.length === 0) {

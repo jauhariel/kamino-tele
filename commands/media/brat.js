@@ -4,7 +4,7 @@ export default {
   usage: "/brat <text>",
   category: "media",
 
-  async execute(ctx, args) {
+  async execute({ ctx, m, args }) {
     try {
       // Cek apakah ada text yang diberikan
       if (!args || args.length === 0) {

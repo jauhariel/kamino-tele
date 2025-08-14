@@ -4,7 +4,7 @@ export default {
   usage: "/menu [command_name]",
   category: "utility",
 
-  async execute(ctx, args, commandLoader, prefix = "/") {
+  async execute({ ctx, args, commandLoader, prefix = "/" }) {
     try {
       if (args && args.length > 0) {
         // Show help for specific command

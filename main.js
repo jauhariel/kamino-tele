@@ -1,11 +1,14 @@
 import { Telegraf } from "telegraf";
-import { message } from "telegraf/filters";
-import dotenv from "dotenv";
+import "./config.js";
 import { CommandLoader } from "./utils/commandLoader.js";
 
-dotenv.config();
+if (global.token) {
+  console.log("✅ Bot token is set.");
+} else {
+  console.error("❌ Bot token is not set.");
+}
 
-const bot = new Telegraf(process.env.BOT_TOKEN);
+const bot = new Telegraf(global.token);
 const commandLoader = new CommandLoader();
 
 // Load all commands when bot starts
@@ -34,13 +37,26 @@ Happy using! 🚀`,
 });
 
 // Command handler untuk semua commands yang dimulai dengan / atau .
-bot.on(message("text"), async (ctx) => {
-  const text = ctx.message.text;
-  const user = ctx.from;
-  console.log(user);
+bot.on("message", async (ctx) => {
+  const m = ctx.message;
+  m.id = m.chat.id;
+  m.userId = m.from.id;
+  m.isGroup = m.chat.type === "group" || m.chat.type === "supergroup";
+  m.nameGroup = m.isGroup ? m.chat.title : null;
+  m.userNameGroup = m.isGroup ? m.chat.username : null;
+  m.isBot = m.from.is_bot;
+  m.name = m.from.first_name;
+  m.userName = m.from.username;
+  m.language = m.from.language_code;
+  m.commandText = m.text || m.caption || "";
+  m.isReply = m.reply_to_message ? true : false;
+  m.typeMsg = m.photo ? "photo" : m.video ? "video" : "text";
 
+  console.log(m);
   // Log user activity
-  console.log(`👤 ${user.first_name} (${user.id}): ${text}`);
+  console.log(`👤 ${m.userName} (${m.userId}): ${m.commandText}`);
+
+  const text = m.commandText;
 
   // Check if message starts with / or .
   if (text.startsWith("/") || text.startsWith(".")) {
@@ -66,7 +82,7 @@ bot.on(message("text"), async (ctx) => {
 
       try {
         // Execute command dengan mengirimkan prefix yang digunakan
-        await command.execute(ctx, args, commandLoader, prefix);
+        await command.execute({ ctx, m, args, commandLoader, prefix });
       } catch (error) {
         console.error(`❌ Error executing command '${commandName}':`, error);
         ctx.reply(
@@ -84,7 +100,7 @@ bot.on(message("text"), async (ctx) => {
   } else {
     // Handle non-command messages
     ctx.reply(
-      `Halo, ${user.first_name}! 👋\n\n💡 Ketik /menu atau .menu untuk melihat command yang tersedia.`,
+      `Halo, ${m.name}! 👋\n\n💡 Ketik /menu atau .menu untuk melihat command yang tersedia.`,
       { reply_to_message_id: ctx.message.message_id }
     );
   }

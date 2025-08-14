@@ -60,7 +60,7 @@ export default {
   usage: "/info",
   category: "utility",
 
-  async execute(ctx) {
+  async execute({ ctx, m }) {
     try {
       const message = await ctx.reply("🏓 Mengambil data info...", {
         reply_to_message_id: ctx.message.message_id,
