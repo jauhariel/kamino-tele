@@ -58,23 +58,6 @@ bot.on("message", async (ctx) => {
   m.language = m.from.language_code;
   m.commandText = m.text || m.caption || "";
   m.isReply = m.reply_to_message ? true : false;
-  m.typeMsg = m.photo
-    ? "photo"
-    : m.video
-    ? "video"
-    : m.sticker
-    ? "sticker"
-    : m.audio
-    ? "audio"
-    : m.document
-    ? "document"
-    : m.location
-    ? "location"
-    : m.contact
-    ? "contact"
-    : m.poll
-    ? "poll"
-    : "text";
 
   console.log(m);
   // Log user activity
