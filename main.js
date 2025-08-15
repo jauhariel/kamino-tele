@@ -1,6 +1,15 @@
 import { Telegraf } from "telegraf";
 import "./config.js";
 import { CommandLoader } from "./utils/commandLoader.js";
+import fs from "fs";
+import path from "path";
+
+const tmpDir = path.join(process.cwd(), "tmp");
+
+if (!fs.existsSync(tmpDir)) {
+  fs.mkdirSync(tmpDir, { recursive: true });
+  // console.log("📁 Created tmp directory");
+}
 
 if (global.token) {
   console.log("✅ Bot token is set.");
@@ -122,7 +131,7 @@ bot.on("message", async (ctx) => {
 });
 
 console.log("✅ Bot is ready and listening for messages...");
-bot.launch();
+bot.launch({ dropPendingUpdates: true });
 
 // Enable graceful stop
 process.once("SIGINT", () => bot.stop("SIGINT"));

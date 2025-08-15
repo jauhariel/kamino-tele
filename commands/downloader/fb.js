@@ -74,9 +74,7 @@ export default {
           "⏳ Mendownload video..."
         );
 
-        const writer = fs.createWriteStream(
-          `./media/tmp/facebook_${Date.now()}.mp4`
-        );
+        const writer = fs.createWriteStream(`./tmp/facebook_${Date.now()}.mp4`);
 
         const response = await axios({
           method: "GET",
